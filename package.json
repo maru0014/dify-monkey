@@ -1,0 +1,65 @@
+{
+  "name": "dify-monkey",
+  "version": "0.1.0",
+  "description": "UserScript Manager with Dify Integration",
+  "author": {
+    "name": "marumo",
+    "email": "marumo@codelife.cafe"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maru0014/dify-monkey.git"
+  },
+  "homepage": "https://github.com/maru0014/dify-monkey#readme",
+  "bugs": {
+    "url": "https://github.com/maru0014/dify-monkey/issues"
+  },
+  "keywords": [
+    "chrome-extension",
+    "dify",
+    "userscript",
+    "ai",
+    "workflow",
+    "automation"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "@mozilla/readability": "^0.6.0",
+    "@radix-ui/react-slot": "^1.1.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.476.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-markdown": "^9.0.3",
+    "react-router-dom": "^7.1.5",
+    "remark-gfm": "^4.0.1",
+    "shadcn-ui": "^0.9.5",
+    "tailwind-merge": "^3.0.1"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.0.0-beta.28",
+    "@types/chrome": "^0.0.306",
+    "@types/node": "^22.13.4",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^5.1.2",
+    "@vitest/browser": "^4.0.17",
+    "autoprefixer": "^10.4.20",
+    "happy-dom": "^20.3.1",
+    "postcss": "^8.5.2",
+    "tailwindcss": "^3.4.17",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.1",
+    "vitest": "^4.0.17"
+  }
+}
