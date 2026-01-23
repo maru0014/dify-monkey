@@ -20,10 +20,8 @@ export const ScriptCard: React.FC<ScriptCardProps> = ({
 
 	return (
 		<div
-			className={`border rounded-lg p-3 transition-all ${isCurrentPageMatch
-				? 'border-primary/50 bg-primary/5'
-				: 'border-border hover:border-border/80'
-				} ${isRunning ? 'opacity-60' : ''}`}
+			className={`border rounded-lg p-3 transition-all border-border hover:border-border/80 ${isRunning ? 'opacity-60' : ''
+				}`}
 		>
 			<div className="flex items-start justify-between gap-2">
 				<div className="flex-1 min-w-0">
@@ -47,9 +45,17 @@ export const ScriptCard: React.FC<ScriptCardProps> = ({
 
 				<button
 					onClick={() => onExecute(script.id)}
-					disabled={!script.enabled || isRunning}
+					disabled={!script.enabled || isRunning || !isCurrentPageMatch}
 					className="flex-shrink-0 p-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-					title={isRunning ? 'Running...' : 'Run'}
+					title={
+						isRunning
+							? 'Running...'
+							: !script.enabled
+								? 'Script disabled'
+								: !isCurrentPageMatch
+									? 'Not available on this page'
+									: 'Run'
+					}
 				>
 					<Play size={16} />
 				</button>

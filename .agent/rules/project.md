@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Dify Monkey - プロジェクトルール
 
 ## 概要
@@ -105,4 +109,4 @@ npm run build
 ```
 
 ## 参照
-- 設計書: `設計書.md`
+- 設計書: `DESIGN.md`

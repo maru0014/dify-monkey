@@ -1,6 +1,7 @@
 import React from 'react';
 import { Settings as SettingsIcon, ExternalLink, Trash2 } from 'lucide-react';
 import { useUserScripts } from '@/shared/hooks';
+import { matchesAny } from '@/shared/lib/url-matcher';
 import { ScriptExecution, ScriptLog, UserScript } from '@/shared/types';
 import { ScriptCard } from './ScriptCard';
 import { ExecutionProgress } from './ExecutionProgress';
@@ -15,6 +16,7 @@ interface ScriptsTabProps {
 	onCancel: (executionId: string) => void;
 	onClearHistory: () => void;
 	onClearLogs: () => void;
+	currentUrl: string | null;
 }
 
 export const ScriptsTab: React.FC<ScriptsTabProps> = ({
@@ -25,11 +27,19 @@ export const ScriptsTab: React.FC<ScriptsTabProps> = ({
 	onCancel,
 	onClearHistory,
 	onClearLogs,
+	currentUrl,
 }) => {
 	const { scripts, loading } = useUserScripts();
 
-	// Filter scripts that have trigger = context_menu or auto
-	const enabledScripts = scripts.filter((s) => s.enabled);
+	// Filter scripts that match the current URL
+	const visibleScripts = scripts.filter((s) => {
+		if (!currentUrl) return true;
+		return matchesAny(currentUrl, s.matches);
+	});
+
+	// Filter visible scripts that are enabled (for count)
+	const enabledVisibleScripts = visibleScripts.filter((s) => s.enabled);
+
 	const runningExecutions = executions.filter((e) => e.status === 'running');
 	const completedHistory = history.filter((e) => e.status !== 'running');
 
@@ -86,22 +96,32 @@ export const ScriptsTab: React.FC<ScriptsTabProps> = ({
 			{/* Script list */}
 			<div className="flex-1 overflow-auto p-3">
 				<h3 className="text-sm font-medium text-muted-foreground mb-2">
-					Scripts ({enabledScripts.length}/{scripts.length})
+					Scripts ({enabledVisibleScripts.length}/{visibleScripts.length})
 				</h3>
-				<div className="space-y-2">
-					{scripts.map((script) => {
-						const execution = executions.find((e) => e.scriptId === script.id);
-						return (
-							<ScriptCard
-								key={script.id}
-								script={script}
-								execution={execution}
-								onExecute={() => onExecute(script)}
-								onCancel={onCancel}
-							/>
-						);
-					})}
-				</div>
+				{visibleScripts.length === 0 ? (
+					<div className="text-center py-8 text-muted-foreground">
+						<p className="text-sm">このページで実行可能なスクリプトはありません</p>
+					</div>
+				) : (
+					<div className="space-y-2">
+						{visibleScripts.map((script) => {
+							const execution = executions.find((e) => e.scriptId === script.id);
+							// Since we filtered by match, isMatch is always true (unless currentUrl is null)
+							const isMatch = true;
+
+							return (
+								<ScriptCard
+									key={script.id}
+									script={script}
+									execution={execution}
+									isCurrentPageMatch={isMatch}
+									onExecute={() => onExecute(script)}
+									onCancel={onCancel}
+								/>
+							);
+						})}
+					</div>
+				)}
 			</div>
 
 			{/* Logs */}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Send, Settings as SettingsIcon, FileText, X, Loader2, Pencil } from 'lucide-react';
-import { useDifyApps, useScriptExecution, useTheme } from '@/shared/hooks';
+import { useDifyApps, useScriptExecution, useTheme, useActiveTabUrl } from '@/shared/hooks';
 import { ScriptLog } from '@/shared/types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -285,6 +285,9 @@ const App: React.FC = () => {
 	// テーマを適用
 	useTheme();
 
+	// Track current tab URL (Must be called before conditional returns)
+	const currentUrl = useActiveTabUrl();
+
 	const { apps, loading } = useDifyApps();
 	const [activeTab, setActiveTab] = useState<SidepanelTab>('chat');
 	const [tabLoaded, setTabLoaded] = useState(false);
@@ -395,6 +398,8 @@ const App: React.FC = () => {
 		);
 	}
 
+
+
 	return (
 		<div className="h-screen flex flex-col bg-background text-foreground">
 			{/* Header */}
@@ -433,6 +438,7 @@ const App: React.FC = () => {
 						onCancel={cancel}
 						onClearHistory={clearHistory}
 						onClearLogs={clearLogs}
+						currentUrl={currentUrl}
 					/>
 				)}
 			</div>
