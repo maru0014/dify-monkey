@@ -19,7 +19,7 @@ export function useActiveTabUrl(): string | null {
     });
 
     // Helper to update URL from tab
-    const updateUrl = (tabId?: number) => {
+    const updateUrl = (_tabId?: number) => {
       chrome.tabs.query({ active: true, windowId: currentWindowIdRef.current || undefined }, (tabs) => {
         // If specific tabId provided, verify it's the active one (though query should handle it)
         const tab = tabs[0];
@@ -30,7 +30,7 @@ export function useActiveTabUrl(): string | null {
     };
 
     // Listen for tab updates (e.g. navigation)
-    const onUpdated = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) => {
+    const onUpdated = (_tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) => {
       // Check if this update belongs to our window
       if (currentWindowIdRef.current && tab.windowId !== currentWindowIdRef.current) {
         return;
