@@ -29,7 +29,11 @@ export function matchesPattern(url: string, pattern: string): boolean {
     const pathPattern = pathSeparatorIndex === -1 ? '/*' : hostAndPath.substring(pathSeparatorIndex);
 
     // 1. Check Scheme
-    if (schemePattern !== '*' && schemePattern !== urlObj.protocol.replace(':', '')) {
+    if (schemePattern === '*') {
+      if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
+        return false;
+      }
+    } else if (schemePattern !== urlObj.protocol.replace(':', '')) {
       return false;
     }
 
