@@ -47,7 +47,7 @@ export const Sidebar: React.FC = () => {
 				</ul>
 			</nav>
 			<div className="p-4 border-t border-border text-xs text-muted-foreground">
-				v0.1.0
+				v{chrome.runtime.getManifest().version}
 			</div>
 		</aside>
 	);
