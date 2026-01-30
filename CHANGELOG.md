@@ -1,3 +1,10 @@
+## [0.2.1](https://github.com/maru0014/dify-monkey/compare/v0.2.0...v0.2.1) (2026-01-30)
+
+
+### Bug Fixes
+
+* resolve CSP issues by using userScripts.execute and postMessage ([#5](https://github.com/maru0014/dify-monkey/issues/5)) ([3a41e51](https://github.com/maru0014/dify-monkey/commit/3a41e51b04ef11ddcc8e4f90b98740bb68f83eff))
+
 # Changelog
 
 このプロジェクトのすべての重要な変更はこのファイルに記録されます。

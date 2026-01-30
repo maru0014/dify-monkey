@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "dify monkey",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "UserScript Manager with Dify Integration",
   "action": {
     "default_title": "Open Dify Side Panel"
@@ -26,15 +26,24 @@
   "options_page": "src/options/index.html",
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["src/content/relay.ts"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "src/content/relay.ts"
+      ],
       "run_at": "document_start"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["src/sidepanel/index.html", "src/options/index.html"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "src/sidepanel/index.html",
+        "src/options/index.html"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ]
 }
