@@ -28,7 +28,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "prepare": "husky"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
@@ -46,7 +47,12 @@
     "tailwind-merge": "^3.0.1"
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.4.0",
+    "@commitlint/config-conventional": "^20.4.0",
     "@crxjs/vite-plugin": "^2.0.0-beta.28",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/exec": "^7.1.0",
+    "@semantic-release/git": "^10.0.1",
     "@types/chrome": "^0.0.306",
     "@types/node": "^22.13.4",
     "@types/react": "^19.0.10",
@@ -55,7 +61,9 @@
     "@vitest/browser": "^4.0.17",
     "autoprefixer": "^10.4.20",
     "happy-dom": "^20.3.1",
+    "husky": "^9.1.7",
     "postcss": "^8.5.2",
+    "semantic-release": "^24.2.9",
     "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.7.3",

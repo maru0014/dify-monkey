@@ -1,37 +1,47 @@
 ---
-description: Githubリリース作成・バージョン更新フロー
+description: Githubリリース作成（semantic-releaseによる自動化）
 ---
 
-# Githubリリース作成フロー
+# Githubリリースフロー
 
-このワークフローは、バージョン番号の更新からタグのプッシュまでを行います。
-実行前に、更新するバージョン番号（例: `0.1.2`）を決定してください。
+## 概要
+semantic-release により、mainブランチへのマージで自動的にリリースが作成されます。
 
-1. **バージョン定義ファイルの更新**
-   `package.json` と `manifest.json` の `version` フィールドを新しいバージョン（例: `0.1.2`）に更新してください。
+## フロー
 
-2. **ビルド検証**
-   ビルドが正常に通るか確認します。
+1. **フィーチャーブランチで開発**
    ```bash
-   npm run build
+   git checkout -b feat/new-feature
    ```
 
-3. **変更のコミット**
-   バージョン変更をコミットします。`<VERSION>` は実際のバージョンに置き換えてください。
+2. **Conventional Commitsに従ってコミット**
    ```bash
-   git add package.json manifest.json
-   git commit -m "chore: release v<VERSION>"
+   # 新機能 → マイナーバージョンアップ
+   git commit -m "feat: 新しい機能を追加"
+   
+   # バグ修正 → パッチバージョンアップ
+   git commit -m "fix: バグを修正"
+   
+   # 破壊的変更 → メジャーバージョンアップ
+   git commit -m "feat!: APIを変更" 
+   # または
+   git commit -m "feat: 変更内容
+   
+   BREAKING CHANGE: 詳細説明"
    ```
 
-4. **タグの作成**
-   Gitタグを作成します。
-   ```bash
-   git tag v<VERSION>
-   ```
+3. **PRを作成・マージ**
+   - PRをmainへマージすると自動的にリリース
 
-5. **変更とタグのプッシュ**
-   この操作により、GitHub Actionsがトリガーされ、リリースが作成されます。
-   ```bash
-   git push origin main
-   git push origin v<VERSION>
-   ```
+## 自動化される処理
+- バージョン番号の決定（コミット履歴から）
+- CHANGELOG.md の更新
+- package.json / manifest.json のバージョン更新
+- Gitタグの作成
+- GitHubリリースの作成（ZIP添付）
+
+## 注意事項
+
+> ⚠️ 手動でのタグ作成・バージョン更新は不要です
+
+> ⚠️ リリースをスキップしたい場合は `[skip ci]` をコミットメッセージに含める
