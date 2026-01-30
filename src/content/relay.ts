@@ -7,8 +7,9 @@ import { Readability } from '@mozilla/readability';
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'extract-page-content') {
     try {
-      // Clone the document to avoid modifying the original
-      const documentClone = document.cloneNode(true) as Document;
+      // Use DOMParser instead of cloneNode to avoid Custom Elements registry issues
+      const parser = new DOMParser();
+      const documentClone = parser.parseFromString(document.documentElement.outerHTML, 'text/html');
       const reader = new Readability(documentClone);
       const article = reader.parse();
 
@@ -30,10 +31,22 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         });
       }
     } catch (error: any) {
-      sendResponse({
-        success: false,
-        error: error.message,
-      });
+      // Fallback for Custom Elements or other cloning errors
+      console.warn('Readability extraction failed, using fallback:', error.message);
+      try {
+        const bodyText = document.body?.innerText || '';
+        sendResponse({
+          success: true,
+          title: document.title,
+          content: bodyText,
+          length: bodyText.length,
+        });
+      } catch {
+        sendResponse({
+          success: false,
+          error: error.message,
+        });
+      }
     }
     return true; // Keep channel open for async response
   } else if (message.type === 'abort-script') {
@@ -42,6 +55,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       new CustomEvent(`dify-abort-${message.scriptId}`)
     );
     sendResponse({ success: true });
+    return false;
+  } else if (message.type === 'get-selected-text') {
+    // Return currently selected text on the page
+    const selection = window.getSelection()?.toString() || '';
+    sendResponse({ success: true, text: selection });
     return false;
   }
 
@@ -82,7 +100,9 @@ window.addEventListener('message', async (event: MessageEvent) => {
   } else if (action === 'page-read-content') {
     // Handle page content reading directly in content script
     try {
-      const documentClone = document.cloneNode(true) as Document;
+      // Use DOMParser instead of cloneNode to avoid Custom Elements registry issues
+      const parser = new DOMParser();
+      const documentClone = parser.parseFromString(document.documentElement.outerHTML, 'text/html');
       const reader = new Readability(documentClone);
       const article = reader.parse();
 

@@ -36,15 +36,50 @@ const ChatTab: React.FC<{
 	const [attachedContent, setAttachedContent] = useState<PageContent | null>(null);
 	const [isExtracting, setIsExtracting] = useState(false);
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+	const [selectedText, setSelectedText] = useState<string>('');
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const portRef = useRef<chrome.runtime.Port | null>(null);
+
+	// Poll for selected text on active tab
+	useEffect(() => {
+		const pollSelection = async () => {
+			try {
+				const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+				if (!tab?.id) return;
+
+				const response = await chrome.tabs.sendMessage(tab.id, { type: 'get-selected-text' });
+				if (response?.success) {
+					setSelectedText(response.text || '');
+				}
+			} catch {
+				// Tab may not have content script loaded
+				setSelectedText('');
+			}
+		};
+
+		pollSelection();
+		const interval = setInterval(pollSelection, 500);
+		return () => clearInterval(interval);
+	}, []);
 
 	useEffect(() => {
 		messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 	}, [messages]);
 
-	const handleExtractPageContent = async () => {
+	const handleLoadContent = async () => {
 		if (isExtracting) return;
+
+		// If there's selected text, use it directly
+		if (selectedText) {
+			setAttachedContent({
+				title: '選択テキスト',
+				content: selectedText,
+				length: selectedText.length,
+			});
+			return;
+		}
+
+		// Otherwise, extract page content
 		setIsExtracting(true);
 
 		try {
@@ -223,17 +258,17 @@ const ChatTab: React.FC<{
 				{/* Attachment toolbar */}
 				<div className="flex items-center gap-2 mb-2">
 					<button
-						onClick={handleExtractPageContent}
+						onClick={handleLoadContent}
 						disabled={isExtracting || isStreaming}
 						className="flex items-center gap-1 px-2 py-1 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded-md disabled:opacity-50 transition-colors"
-						title="ページコンテンツを読み込む"
+						title={selectedText ? '選択したテキストを読み込む' : 'ページコンテンツを読み込む'}
 					>
 						{isExtracting ? (
 							<Loader2 size={16} className="animate-spin" />
 						) : (
 							<FileText size={16} />
 						)}
-						<span>ページを読み込む</span>
+						<span>{selectedText ? '選択したテキストを読み込む' : 'ページを読み込む'}</span>
 					</button>
 				</div>
 
