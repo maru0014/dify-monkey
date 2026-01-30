@@ -22,35 +22,41 @@ export function generateBridgeCode(scriptId: string, linkedAppId?: string): stri
   }
 
   // Send request to Content Script and wait for response
+  // Uses postMessage for cross-world communication (USER_SCRIPT <-> ISOLATED)
   function sendRequest(type, payload) {
     return new Promise((resolve, reject) => {
       const requestId = generateRequestId();
 
-      // Listen for response
+      // Listen for response via postMessage
       const responseHandler = (event) => {
-        window.removeEventListener('dify-response-' + requestId, responseHandler);
-        const detail = event.detail;
-        if (detail && detail.error) {
-          reject(new Error(detail.error));
+        // Only accept messages from the same window
+        if (event.source !== window) return;
+
+        const data = event.data;
+        if (!data || data.type !== 'dify-response' || data.requestId !== requestId) return;
+
+        window.removeEventListener('message', responseHandler);
+
+        if (data.error) {
+          reject(new Error(data.error));
         } else {
-          resolve(detail);
+          resolve(data.payload);
         }
       };
 
-      window.addEventListener('dify-response-' + requestId, responseHandler);
+      window.addEventListener('message', responseHandler);
 
-      // Send request
-      window.dispatchEvent(new CustomEvent('dify-request', {
-        detail: {
-          requestId: requestId,
-          type: type,
-          payload: payload
-        }
-      }));
+      // Send request via postMessage
+      window.postMessage({
+        type: 'dify-request',
+        requestId: requestId,
+        action: type,
+        payload: payload
+      }, '*');
 
       // Timeout after 60 seconds
       setTimeout(() => {
-        window.removeEventListener('dify-response-' + requestId, responseHandler);
+        window.removeEventListener('message', responseHandler);
         reject(new Error('Request timeout'));
       }, 60000);
     });
