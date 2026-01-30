@@ -56,14 +56,14 @@ sequenceDiagram
     participant D as Dify API
 
     Note over U: await dify.workflow.run({ inputs })
-    U->>U: CustomEvent ('dify-request') 発火
-    C->>C: Event Listener 検知
+    U->>C: postMessage ('dify-request')
+    C->>C: message Event 検知
     C->>B: chrome.runtime.sendMessage
     B->>B: StorageからApp ID/APIキー解決
     B->>D: POST /workflows/run
     D-->>B: JSON Response
     B-->>C: Response return
-    C->>U: CustomEvent ('dify-response-[ID]') 発火
+    C->>U: postMessage ('dify-response-[ID]')
     Note over U: Promise resolve
 
 ```
@@ -500,28 +500,25 @@ root/
     -   最近10件の実行結果を表示。
     -   成功/失敗ステータス、実行時間、結果コピー、再実行ボタン。
 
-## 10. 既知の問題・修正案
+## 10. 解決済みの既知問題
 
-### 10.1 CSP/Trusted Types問題
+### 10.1 CSP/Trusted Types問題 ✅ 解決済み
 
-**問題:** GitHubなど厳格なセキュリティポリシー（CSP、Trusted Types）を持つサイトで、コンテキストメニューやサイドパネルからのスクリプト実行がブロックされる。
+**問題:** GitHubなど厳格なセキュリティポリシー（CSP、Trusted Types）を持つサイトで、コンテキストメニューやサイドパネルからのスクリプト実行がブロックされていた。
 
 **エラーメッセージ例:**
 1. `This document requires 'TrustedScript' assignment. The action has been blocked.`
 2. `Executing inline script violates the following Content Security Policy directive 'script-src ...'`
 
 **原因:**
-- 現在、コンテキストメニュー/サイドパネル実行時は `chrome.scripting.executeScript` でMAIN worldに対して `script.textContent = code` でインラインスクリプトを挿入している (`background/index.ts` 186行目、653行目付近)
-- MAIN worldはページのCSP制約を受けるため、インラインスクリプト挿入がブロックされる
+- `chrome.scripting.executeScript` でMAIN worldに対して `script.textContent = code` でインラインスクリプトを挿入していた
+- MAIN worldはページのCSP制約を受けるため、インラインスクリプト挿入がブロックされていた
 
-**修正案:**
-- `chrome.userScripts.execute()` を使用して USER_SCRIPT worldでスクリプトを実行する
-- USER_SCRIPT worldはページのCSP制約を受けないため、問題を回避できる
-- 既存の自動実行スクリプト（`chrome.userScripts.register`）はUSER_SCRIPT worldで動作しているため影響なし
-
-**変更箇所:**
-- `background/index.ts`: 186-197行目（コンテキストメニュー実行）
-- `background/index.ts`: 653-663行目（サイドパネル実行）
+**解決方法（v1.1.0で修正）:**
+1. **スクリプト実行APIの変更:** `chrome.scripting.executeScript` → `chrome.userScripts.execute()` に移行
+   - USER_SCRIPT worldはページのCSP制約を受けないため、問題を回避
+2. **Cross-World通信の変更:** `CustomEvent` → `postMessage` に移行
+   - USER_SCRIPT worldとContent Script (ISOLATED world) 間の通信を安定化
 
 **参考:**
 - https://developer.chrome.com/docs/extensions/reference/api/userScripts
