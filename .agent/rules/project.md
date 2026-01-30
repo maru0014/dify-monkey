@@ -116,6 +116,25 @@ npm run build
 - `feat!:` または `BREAKING CHANGE:` 破壊的変更（メジャーバージョンアップ）
 - `docs:`, `chore:`, `refactor:` その他
 
+## Gitブランチワークフロー
+
+**重要**: 実装を開始する前に、必ず作業用ブランチを作成すること。
+
+1. `main`ブランチに直接コミットしない
+2. 作業開始前に適切な名前のブランチを作成:
+   - `feat/feature-name` - 新機能
+   - `fix/issue-description` - バグ修正
+   - `chore/task-description` - その他のタスク
+   - `docs/update-description` - ドキュメント更新
+3. 作業完了後、PRを作成してマージ
+
+```bash
+# ブランチ作成例
+git checkout main
+git pull
+git checkout -b feat/new-feature
+```
+
 ## リリースフロー
 
 PRを`main`ブランチにマージすると、semantic-releaseにより自動リリース。
