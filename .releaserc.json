@@ -1,0 +1,25 @@
+{
+  "branches": ["main"],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    ["@semantic-release/changelog", {
+      "changelogFile": "CHANGELOG.md"
+    }],
+    ["@semantic-release/npm", {
+      "npmPublish": false
+    }],
+    ["@semantic-release/exec", {
+      "prepareCmd": "node -e \"const fs=require('fs');const m=JSON.parse(fs.readFileSync('manifest.json'));m.version='${nextRelease.version}';fs.writeFileSync('manifest.json',JSON.stringify(m,null,2)+'\\n');\""
+    }],
+    ["@semantic-release/git", {
+      "assets": ["package.json", "package-lock.json", "CHANGELOG.md", "manifest.json"],
+      "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+    }],
+    ["@semantic-release/github", {
+      "assets": [
+        {"path": "dify-monkey-*.zip", "label": "Chrome Extension (${nextRelease.version})"}
+      ]
+    }]
+  ]
+}

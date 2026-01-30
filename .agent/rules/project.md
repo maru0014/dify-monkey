@@ -108,5 +108,18 @@ npm run dev
 npm run build
 ```
 
+## コミット規約（Conventional Commits）
+
+コミットメッセージは以下の形式に従う：
+- `feat:` 新機能（マイナーバージョンアップ）
+- `fix:` バグ修正（パッチバージョンアップ）
+- `feat!:` または `BREAKING CHANGE:` 破壊的変更（メジャーバージョンアップ）
+- `docs:`, `chore:`, `refactor:` その他
+
+## リリースフロー
+
+PRを`main`ブランチにマージすると、semantic-releaseにより自動リリース。
+詳細: `.agent/workflows/release.md`
+
 ## 参照
 - 設計書: `DESIGN.md`

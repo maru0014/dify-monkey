@@ -2,11 +2,13 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
 
 permissions:
   contents: write
+  issues: write
+  pull-requests: write
 
 jobs:
   release:
@@ -15,6 +17,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -31,12 +36,9 @@ jobs:
       - name: Create ZIP archive
         run: |
           cd dist
-          zip -r ../dify-monkey-${{ github.ref_name }}.zip .
+          zip -r ../dify-monkey-extension.zip .
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: dify-monkey-${{ github.ref_name }}.zip
-          generate_release_notes: true
+      - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
