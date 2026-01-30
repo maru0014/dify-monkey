@@ -1,3 +1,10 @@
+# [0.3.0](https://github.com/maru0014/dify-monkey/compare/v0.2.1...v0.3.0) (2026-01-30)
+
+
+### Features
+
+* 選択テキストの自動読み込み機能を追加 ([#7](https://github.com/maru0014/dify-monkey/issues/7)) ([b095709](https://github.com/maru0014/dify-monkey/commit/b095709e0d252fb31b0010b40eed425e6085f3cf))
+
 ## [0.2.1](https://github.com/maru0014/dify-monkey/compare/v0.2.0...v0.2.1) (2026-01-30)
 
 
