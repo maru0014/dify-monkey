@@ -180,20 +180,17 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       return;
     }
 
-    // Execute the script in the tab using scripting API
+    // Execute the script in the tab using userScripts API to avoid CSP restrictions
     const wrappedCode = wrapWithBridge(script.id, script.code, script.linkedAppId);
 
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: (code: string) => {
-        // Execute the script code
-        const scriptEl = document.createElement('script');
-        scriptEl.textContent = code;
-        document.documentElement.appendChild(scriptEl);
-        scriptEl.remove();
-      },
-      args: [wrappedCode],
-      world: 'MAIN',
+    if (!isUserScriptsAvailable()) {
+      console.error('[Dify Monkey] userScripts API not available');
+      throw new Error('userScripts API not available. Please enable Developer Mode.');
+    }
+
+    await chrome.userScripts.execute({
+      target: { tabId: tab.id, allFrames: false },
+      js: [{ code: wrappedCode }],
     });
 
     console.log(`[Dify Monkey] Executed script: ${script.name}`);
@@ -698,17 +695,14 @@ ${bridgeCode}
       startedAt: Date.now(),
     });
 
-    // Inject the wrapped script into the page (main frame only)
-    await chrome.scripting.executeScript({
+    // Inject the wrapped script using userScripts API to avoid CSP restrictions
+    if (!isUserScriptsAvailable()) {
+      throw new Error('userScripts API not available. Please enable Developer Mode.');
+    }
+
+    await chrome.userScripts.execute({
       target: { tabId: tab.id, allFrames: false },
-      func: (code: string) => {
-        const scriptEl = document.createElement('script');
-        scriptEl.textContent = code;
-        document.documentElement.appendChild(scriptEl);
-        scriptEl.remove();
-      },
-      args: [wrappedCode],
-      world: 'MAIN',
+      js: [{ code: wrappedCode }],
     });
 
     port.postMessage({

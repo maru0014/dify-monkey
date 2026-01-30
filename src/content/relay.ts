@@ -49,32 +49,37 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   return false;
 });
 
-// Listen for custom events from USER_SCRIPT world
-window.addEventListener('dify-request', async (event: Event) => {
-  const customEvent = event as CustomEvent;
-  const { requestId, type, payload } = customEvent.detail;
+// Listen for postMessage from USER_SCRIPT world
+window.addEventListener('message', async (event: MessageEvent) => {
+  // Only accept messages from the same window
+  if (event.source !== window) return;
 
-  if (type === 'workflow-run' || type === 'file-upload' || type === 'ui-prompt' || type === 'log' || type === 'script-start' || type === 'script-done') {
+  const data = event.data;
+  if (!data || data.type !== 'dify-request') return;
+
+  const { requestId, action, payload } = data;
+
+  if (action === 'workflow-run' || action === 'file-upload' || action === 'ui-prompt' || action === 'log' || action === 'script-start' || action === 'script-done') {
     try {
       const response = await chrome.runtime.sendMessage({
-        type: `dify-${type}`,
+        type: `dify-${action}`,
         payload,
       });
 
-      // Dispatch response back to USER_SCRIPT world
-      window.dispatchEvent(
-        new CustomEvent(`dify-response-${requestId}`, {
-          detail: response,
-        })
-      );
+      // Send response back via postMessage
+      window.postMessage({
+        type: 'dify-response',
+        requestId: requestId,
+        payload: response,
+      }, '*');
     } catch (error: any) {
-      window.dispatchEvent(
-        new CustomEvent(`dify-response-${requestId}`, {
-          detail: { error: error.message },
-        })
-      );
+      window.postMessage({
+        type: 'dify-response',
+        requestId: requestId,
+        error: error.message,
+      }, '*');
     }
-  } else if (type === 'page-read-content') {
+  } else if (action === 'page-read-content') {
     // Handle page content reading directly in content script
     try {
       const documentClone = document.cloneNode(true) as Document;
@@ -97,17 +102,17 @@ window.addEventListener('dify-request', async (event: Event) => {
         };
       }
 
-      window.dispatchEvent(
-        new CustomEvent(`dify-response-${requestId}`, {
-          detail: result,
-        })
-      );
+      window.postMessage({
+        type: 'dify-response',
+        requestId: requestId,
+        payload: result,
+      }, '*');
     } catch (error: any) {
-      window.dispatchEvent(
-        new CustomEvent(`dify-response-${requestId}`, {
-          detail: { error: error.message },
-        })
-      );
+      window.postMessage({
+        type: 'dify-response',
+        requestId: requestId,
+        error: error.message,
+      }, '*');
     }
   }
 });
