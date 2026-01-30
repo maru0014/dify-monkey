@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Send, Settings as SettingsIcon, FileText, X, Loader2, Pencil } from 'lucide-react';
+import { Send, Settings as SettingsIcon, FileText, X, Loader2, Pencil, MessageSquarePlus } from 'lucide-react';
 import { useDifyApps, useScriptExecution, useTheme, useActiveTabUrl } from '@/shared/hooks';
 import { ScriptLog } from '@/shared/types';
 import ReactMarkdown from 'react-markdown';
@@ -25,8 +25,12 @@ const ChatTab: React.FC<{
 	selectedApp: string;
 	setSelectedApp: (id: string) => void;
 	chatflowApps: any[];
-}> = ({ selectedApp, setSelectedApp, chatflowApps }) => {
-	const [messages, setMessages] = useState<Message[]>([]);
+	conversationId: string | null;
+	onConversationIdChange: (id: string | null) => void;
+	onNewChat: () => void;
+	messages: Message[];
+	onMessagesChange: (updater: Message[] | ((prev: Message[]) => Message[])) => void;
+}> = ({ selectedApp, setSelectedApp, chatflowApps, conversationId, onConversationIdChange, onNewChat, messages, onMessagesChange }) => {
 	const [input, setInput] = useState('');
 	const [isStreaming, setIsStreaming] = useState(false);
 	const [attachedContent, setAttachedContent] = useState<PageContent | null>(null);
@@ -91,17 +95,16 @@ const ChatTab: React.FC<{
 			hasPageContent,
 		};
 
-		setMessages((prev) => [...prev, userMessage]);
-		setInput('');
-		setAttachedContent(null); // Clear attachment after sending
-		setIsStreaming(true);
-
 		const assistantMessage: Message = {
 			role: 'assistant',
 			content: '',
 			timestamp: Date.now(),
 		};
-		setMessages((prev) => [...prev, assistantMessage]);
+
+		onMessagesChange([...messages, userMessage, assistantMessage]);
+		setInput('');
+		setAttachedContent(null); // Clear attachment after sending
+		setIsStreaming(true);
 
 		// Connect to background
 		const port = chrome.runtime.connect({ name: 'dify-chat-stream' });
@@ -109,11 +112,18 @@ const ChatTab: React.FC<{
 
 		port.onMessage.addListener((msg) => {
 			if (msg.type === 'chunk') {
-				setMessages((prev) => {
+				// 最初のチャンクでconversation_idを保存
+				if (msg.data.conversation_id && !conversationId) {
+					onConversationIdChange(msg.data.conversation_id);
+				}
+				onMessagesChange((prev: Message[]) => {
 					const updated = [...prev];
 					const lastMsg = updated[updated.length - 1];
 					if (lastMsg && lastMsg.role === 'assistant') {
-						lastMsg.content += msg.data.answer || '';
+						updated[updated.length - 1] = {
+							...lastMsg,
+							content: lastMsg.content + (msg.data.answer || '')
+						};
 					}
 					return updated;
 				});
@@ -121,11 +131,14 @@ const ChatTab: React.FC<{
 				setIsStreaming(false);
 				port.disconnect();
 			} else if (msg.type === 'error') {
-				setMessages((prev) => {
+				onMessagesChange((prev: Message[]) => {
 					const updated = [...prev];
 					const lastMsg = updated[updated.length - 1];
 					if (lastMsg && lastMsg.role === 'assistant') {
-						lastMsg.content = `Error: ${msg.error}`;
+						updated[updated.length - 1] = {
+							...lastMsg,
+							content: `Error: ${msg.error}`
+						};
 					}
 					return updated;
 				});
@@ -139,18 +152,19 @@ const ChatTab: React.FC<{
 			payload: {
 				query,
 				appId: selectedApp,
+				conversationId,
 			},
 		});
 	};
 
 	return (
 		<div className="flex flex-col h-full">
-			{/* App selector */}
-			<div className="p-3 border-b border-border">
+			{/* App selector with new chat button */}
+			<div className="p-3 border-b border-border flex items-center gap-2">
 				<select
 					value={selectedApp}
 					onChange={(e) => setSelectedApp(e.target.value)}
-					className="w-full px-3 py-2 border border-border rounded-md bg-background text-sm"
+					className="flex-1 px-3 py-2 border border-border rounded-md bg-background text-sm"
 				>
 					{chatflowApps.map((app) => (
 						<option key={app.id} value={app.id}>
@@ -158,6 +172,15 @@ const ChatTab: React.FC<{
 						</option>
 					))}
 				</select>
+				<button
+					onClick={() => {
+						onNewChat();
+					}}
+					className="p-2 hover:bg-accent rounded-md transition-colors"
+					title="新しい会話"
+				>
+					<MessageSquarePlus size={18} />
+				</button>
 			</div>
 
 			{/* Messages */}
@@ -293,6 +316,12 @@ const App: React.FC = () => {
 	const [tabLoaded, setTabLoaded] = useState(false);
 	const [selectedApp, setSelectedApp] = useState<string>('');
 
+	// アプリごとの会話ID管理
+	const [conversationIds, setConversationIds] = useState<Record<string, string | null>>({});
+
+	// アプリごとのメッセージ履歴管理
+	const [messagesPerApp, setMessagesPerApp] = useState<Record<string, Message[]>>({});
+
 	// 前回開いていたタブをストレージから読み込む
 	useEffect(() => {
 		chrome.storage.local.get('sidepanelLastTab', (result) => {
@@ -350,6 +379,44 @@ const App: React.FC = () => {
 
 	// Count running executions for badge
 	const runningCount = executions.filter(e => e.status === 'running').length;
+
+	// 現在のアプリの会話ID
+	const currentConversationId = conversationIds[selectedApp] || null;
+
+	// 現在のアプリのメッセージ
+	const currentMessages = messagesPerApp[selectedApp] || [];
+
+	// 会話ID変更ハンドラー
+	const handleConversationIdChange = useCallback((id: string | null) => {
+		setConversationIds(prev => ({
+			...prev,
+			[selectedApp]: id
+		}));
+	}, [selectedApp]);
+
+	// メッセージ変更ハンドラー
+	const handleMessagesChange = useCallback((updater: Message[] | ((prev: Message[]) => Message[])) => {
+		setMessagesPerApp(prev => {
+			const currentMsgs = prev[selectedApp] || [];
+			const newMsgs = typeof updater === 'function' ? updater(currentMsgs) : updater;
+			return {
+				...prev,
+				[selectedApp]: newMsgs
+			};
+		});
+	}, [selectedApp]);
+
+	// 新規会話ハンドラー
+	const handleNewChat = useCallback(() => {
+		setConversationIds(prev => ({
+			...prev,
+			[selectedApp]: null
+		}));
+		setMessagesPerApp(prev => ({
+			...prev,
+			[selectedApp]: []
+		}));
+	}, [selectedApp]);
 
 	if (loading || !tabLoaded) {
 		return (
@@ -428,6 +495,11 @@ const App: React.FC = () => {
 						selectedApp={selectedApp}
 						setSelectedApp={setSelectedApp}
 						chatflowApps={chatflowApps}
+						conversationId={currentConversationId}
+						onConversationIdChange={handleConversationIdChange}
+						onNewChat={handleNewChat}
+						messages={currentMessages}
+						onMessagesChange={handleMessagesChange}
 					/>
 				) : (
 					<ScriptsTab

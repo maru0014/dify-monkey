@@ -14,6 +14,18 @@
 
 ---
 
+## [0.2.0] - 2026-01-30
+
+### Added
+- **チャット会話ID管理**: Dify APIからのconversation_idを保持し、会話の継続が可能に
+- **アプリ別メッセージ履歴**: アプリごとにチャット履歴を分離管理
+- **新しい会話ボタン**: サイドパネルから簡単に新規会話を開始可能
+
+### Changed
+- ChatTabコンポーネントのメッセージ状態を親コンポーネントで管理するよう変更
+
+---
+
 ## [0.1.0] - 2026-01-22
 
 ### Added
@@ -44,5 +56,6 @@
 
 ---
 
-[Unreleased]: https://github.com/maru0014/dify-monkey/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/maru0014/dify-monkey/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/maru0014/dify-monkey/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/maru0014/dify-monkey/releases/tag/v0.1.0
