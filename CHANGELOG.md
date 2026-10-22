@@ -1,3 +1,10 @@
+## [0.3.1](https://github.com/maru0014/dify-monkey/compare/v0.3.0...v0.3.1) (2026-10-22)
+
+
+### Bug Fixes
+
+* isolate Dify requests from page messaging ([#8](https://github.com/maru0014/dify-monkey/issues/8)) ([666ec3e](https://github.com/maru0014/dify-monkey/commit/666ec3e416590eadf360149e80820f2da154de9e))
+
 # [0.3.0](https://github.com/maru0014/dify-monkey/compare/v0.2.1...v0.3.0) (2026-01-30)
 
 
