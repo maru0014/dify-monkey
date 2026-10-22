@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "minimum_chrome_version": "135",
   "name": "dify monkey",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "UserScript Manager with Dify Integration",
   "action": {
     "default_title": "Open Dify Side Panel"

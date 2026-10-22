@@ -1,3 +1,10 @@
+## [0.3.2](https://github.com/maru0014/dify-monkey/compare/v0.3.1...v0.3.2) (2026-10-22)
+
+
+### Bug Fixes
+
+* package extension after setting release version ([#9](https://github.com/maru0014/dify-monkey/issues/9)) ([7d87dbf](https://github.com/maru0014/dify-monkey/commit/7d87dbf932ec5cb7b81bcccd2df780bfb6a33223))
+
 ## [0.3.1](https://github.com/maru0014/dify-monkey/compare/v0.3.0...v0.3.1) (2026-10-22)
 
 
