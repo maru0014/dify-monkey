@@ -10,7 +10,7 @@
       "npmPublish": false
     }],
     ["@semantic-release/exec", {
-      "prepareCmd": "node -e \"const fs=require('fs');const m=JSON.parse(fs.readFileSync('manifest.json'));m.version='${nextRelease.version}';fs.writeFileSync('manifest.json',JSON.stringify(m,null,2)+'\\n');\""
+      "prepareCmd": "node scripts/prepare-release.mjs ${nextRelease.version}"
     }],
     ["@semantic-release/git", {
       "assets": ["package.json", "package-lock.json", "CHANGELOG.md", "manifest.json"],
