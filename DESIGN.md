@@ -27,9 +27,9 @@
     
     -   実行ワールド：`ISOLATED`
         
-    -   役割：`USER_SCRIPT` ワールドと `BACKGROUND` 間の通信ブリッジ。
+    -   役割：Background からのページ内容抽出・選択テキスト取得・中止通知。
         
-    -   DOMイベント（CustomEvent）を検知し、Backgroundへメッセージを転送する。
+    -   ページからの DOM イベントや postMessage を Dify 操作として中継しない。
         
 3.  **User Scripts (Runtime)**
     
@@ -56,14 +56,12 @@ sequenceDiagram
     participant D as Dify API
 
     Note over U: await dify.workflow.run({ inputs })
-    U->>C: postMessage ('dify-request')
-    C->>C: message Event 検知
-    C->>B: chrome.runtime.sendMessage
+    U->>B: chrome.runtime.sendMessage (USER_SCRIPT 専用経路)
+    B->>B: onUserScriptMessage で送信元を確認
     B->>B: StorageからApp ID/APIキー解決
     B->>D: POST /workflows/run
     D-->>B: JSON Response
-    B-->>C: Response return
-    C->>U: postMessage ('dify-response-[ID]')
+    B-->>U: 専用 callback で応答（DOM に公開しない）
     Note over U: Promise resolve
 
 ```
@@ -518,7 +516,7 @@ root/
 **解決方法（v1.1.0で修正）:**
 1. **スクリプト実行APIの変更:** `chrome.scripting.executeScript` → `chrome.userScripts.execute()` に移行
    - USER_SCRIPT worldはページのCSP制約を受けないため、問題を回避
-2. **Cross-World通信の変更:** `CustomEvent` → `postMessage` に移行
+2. **過去の Cross-World 通信:** 当初 `CustomEvent` → `postMessage` に移行。現在はページから偽造できる中継を廃止し、専用 USER_SCRIPT メッセージ経路へ移行済み。
    - USER_SCRIPT worldとContent Script (ISOLATED world) 間の通信を安定化
 
 **参考:**

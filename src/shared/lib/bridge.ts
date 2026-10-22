@@ -7,58 +7,36 @@
 
 /**
  * Generates the bridge code string to be prepended to user scripts.
- * This code runs in USER_SCRIPT world and communicates with Content Script via CustomEvents.
+ * This code runs in USER_SCRIPT world and communicates directly with the background via USER_SCRIPT messaging.
  */
 export function generateBridgeCode(scriptId: string, linkedAppId?: string): string {
   return `
 // === Dify Monkey Bridge Code ===
 (function() {
-  const SCRIPT_ID = "${scriptId}";
-  const LINKED_APP_ID = ${linkedAppId ? `"${linkedAppId}"` : 'undefined'};
+  const SCRIPT_ID = ${JSON.stringify(scriptId)};
+  const LINKED_APP_ID = ${JSON.stringify(linkedAppId) ?? 'undefined'};
 
-  // Generate unique request ID
-  function generateRequestId() {
-    return 'req_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-  }
-
-  // Send request to Content Script and wait for response
-  // Uses postMessage for cross-world communication (USER_SCRIPT <-> ISOLATED)
+  // Never use DOM events or window.postMessage for privileged requests or responses.
+  // Chrome exposes this channel only to this extension's USER_SCRIPT world.
   function sendRequest(type, payload) {
     return new Promise((resolve, reject) => {
-      const requestId = generateRequestId();
-
-      // Listen for response via postMessage
-      const responseHandler = (event) => {
-        // Only accept messages from the same window
-        if (event.source !== window) return;
-
-        const data = event.data;
-        if (!data || data.type !== 'dify-response' || data.requestId !== requestId) return;
-
-        window.removeEventListener('message', responseHandler);
-
-        if (data.error) {
-          reject(new Error(data.error));
-        } else {
-          resolve(data.payload);
-        }
-      };
-
-      window.addEventListener('message', responseHandler);
-
-      // Send request via postMessage
-      window.postMessage({
-        type: 'dify-request',
-        requestId: requestId,
-        action: type,
-        payload: payload
-      }, '*');
-
-      // Timeout after 60 seconds
-      setTimeout(() => {
-        window.removeEventListener('message', responseHandler);
-        reject(new Error('Request timeout'));
-      }, 60000);
+      const timeout = setTimeout(() => reject(new Error('Request timeout')), 60000);
+      try {
+        chrome.runtime.sendMessage({
+          type: 'dify-' + type,
+          scriptId: SCRIPT_ID,
+          payload: payload
+        }, (response) => {
+          clearTimeout(timeout);
+          const error = chrome.runtime.lastError;
+          if (error) reject(new Error(error.message));
+          else if (response && response.error) reject(new Error(response.error));
+          else resolve(response);
+        });
+      } catch (error) {
+        clearTimeout(timeout);
+        reject(error);
+      }
     });
   }
 

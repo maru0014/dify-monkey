@@ -1,3 +1,4 @@
+import { isExtensionPageSender, isUserScriptSender } from '@/shared/lib/message-security';
 import { storage } from '@/shared/lib/storage';
 import { DifyClient } from '@/shared/api/dify-client';
 import { WorkflowResult, UserScript, UploadedFile } from '@/shared/types';
@@ -30,7 +31,7 @@ async function configureUserScriptWorld(): Promise<void> {
   try {
     await chrome.userScripts.configureWorld({
       csp: "script-src 'self' 'unsafe-inline' 'unsafe-eval';",
-      messaging: false,
+      messaging: true,
     });
     console.log('[Dify Monkey] USER_SCRIPT world configured');
   } catch (error) {
@@ -190,6 +191,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
     await chrome.userScripts.execute({
       target: { tabId: tab.id, allFrames: false },
+      world: 'USER_SCRIPT',
       js: [{ code: wrappedCode }],
     });
 
@@ -244,8 +246,33 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 // Message Handling (Workflow Execution)
 // ============================================
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'dify-workflow-run') {
+// Ordinary content-script messages cannot invoke Dify APIs. Only our prompt
+// extension page may return a prompt response over this channel.
+chrome.runtime.onMessage.addListener((message, sender) => {
+  if (isExtensionPageSender(sender, chrome.runtime.id) &&
+      message?.type === 'dify-ui-prompt-response') {
+    handleUiPromptResponse(message.payload);
+  }
+  return false;
+});
+
+chrome.runtime.onUserScriptMessage.addListener((message, sender, sendResponse) => {
+  if (!isUserScriptSender(sender, chrome.runtime.id)) {
+    sendResponse({ error: 'Unauthorized user script sender' });
+    return false;
+  }
+  if (!message || typeof message !== 'object') return false;
+  if (message.type === 'dify-page-read-content') {
+    // Target the requesting document, not whichever page is now in the tab.
+    chrome.tabs.sendMessage(sender.tab!.id!, { type: 'extract-page-content' },
+      { documentId: sender.documentId! })
+      .then((response) => {
+        if (!response?.success) throw new Error(response?.error || 'Page extraction failed');
+        sendResponse({ title: response.title, content: response.content, length: response.length });
+      })
+      .catch((error) => sendResponse({ error: error.message }));
+    return true;
+  } else if (message.type === 'dify-workflow-run') {
     handleWorkflowRun(message.payload)
       .then(sendResponse)
       .catch((error) => sendResponse({ error: error.message }));
@@ -260,8 +287,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .then(sendResponse)
       .catch((error) => sendResponse({ error: error.message }));
     return true;
-  } else if (message.type === 'dify-ui-prompt-response') {
-    handleUiPromptResponse(message.payload);
+
   } else if (message.type === 'dify-log') {
     handleScriptLog(message.payload);
     sendResponse({ success: true });
@@ -543,6 +569,10 @@ async function handleFileUpload(payload: {
 // ============================================
 
 chrome.runtime.onConnect.addListener((port) => {
+  if (!port.sender || !isExtensionPageSender(port.sender, chrome.runtime.id)) {
+    port.disconnect();
+    return;
+  }
   if (port.name === 'dify-chat-stream') {
     port.onMessage.addListener(async (message) => {
       if (message.type === 'chat-send') {
@@ -702,6 +732,7 @@ ${bridgeCode}
 
     await chrome.userScripts.execute({
       target: { tabId: tab.id, allFrames: false },
+      world: 'USER_SCRIPT',
       js: [{ code: wrappedCode }],
     });
 
